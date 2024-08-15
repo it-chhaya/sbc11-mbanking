@@ -39,7 +39,7 @@ public class User {
     private LocalDate dob;
     @Column(nullable = false, length = 10)
     private String gender;
-    private String profileImage;
+    private String profileImage; // dara.png
     @Column(unique = true, length = 50)
     private String studentCardId;
 
