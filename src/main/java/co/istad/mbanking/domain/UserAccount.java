@@ -21,7 +21,7 @@ public class UserAccount {
     @ManyToOne
     private User user;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.PERSIST)
     private Account account;
 
     private Boolean isBlocked;

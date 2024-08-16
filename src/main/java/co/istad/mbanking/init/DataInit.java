@@ -2,18 +2,24 @@ package co.istad.mbanking.init;
 
 import co.istad.mbanking.domain.AccountType;
 import co.istad.mbanking.domain.CardType;
+import co.istad.mbanking.domain.User;
 import co.istad.mbanking.features.account.AccountTypeRepository;
 import co.istad.mbanking.features.card.CardTypeRepository;
+import co.istad.mbanking.features.user.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class DataInit {
 
+    private final UserRepository userRepository;
     private final CardTypeRepository cardTypeRepository;
     private final AccountTypeRepository accountTypeRepository;
 
@@ -21,11 +27,30 @@ public class DataInit {
     void init() {
         initCardTypeData();
         initAccountTypeData();
+        initUserData();
+    }
 
-        // Select data
-        List<AccountType> accountTypes = accountTypeRepository.findAll();
-        accountTypes.forEach(System.out::println);
+    private void initUserData() {
+        User user = new User();
+        user.setUuid(UUID.randomUUID().toString());
+        user.setEmail("admin@mbanking.com");
+        user.setPhoneNumber("098459947");
+        user.setPassword("pwd");
+        user.setPin("1234");
+        user.setProfileImage("profile-admin.jpg");
+        user.setNationalCardId("123456789");
+        user.setGender("Male");
+        user.setName("ADMIN");
+        user.setDob(LocalDate.of(1999, 12, 31));
+        user.setCreatedAt(LocalDateTime.now());
+        user.setIsDeleted(false);
+        user.setIsBlocked(false);
+        user.setIsVerified(true);
+        user.setIsAccountNonExpired(true);
+        user.setIsAccountNonLocked(true);
+        user.setIsCredentialsNonExpired(true);
 
+        userRepository.save(user);
     }
 
     private void initAccountTypeData() {

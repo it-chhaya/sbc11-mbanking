@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 public record CreateAccountRequest(
         @NotBlank(message = "Account NO is required")
-        @Size(message = "Account NO must be 9 digits")
+        @Size(message = "Account NO must be 9 digits", max = 9, min = 9)
         String actNo,
         @Positive(message = "Balance must be greater than 0")
         @NotNull(message = "First balance must be 5 dollars up")
