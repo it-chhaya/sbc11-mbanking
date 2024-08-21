@@ -21,6 +21,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(nullable = false, unique = true)
     private String uuid;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -66,5 +67,10 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<UserAccount> userAccounts;
+
+    @ManyToMany
+    @JoinTable(joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
+    private List<Role> roles;
 
 }

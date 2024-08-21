@@ -1,5 +1,6 @@
 package co.istad.mbanking.features.account;
 
+import co.istad.mbanking.features.account.dto.AccountDetailResponse;
 import co.istad.mbanking.features.account.dto.CreateAccountRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,13 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final AccountService accountService;
+
+
+    @GetMapping("/{actNo}")
+    AccountDetailResponse findByActNo(@PathVariable String actNo) {
+        return accountService.findByActNo(actNo);
+    }
+
 
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping

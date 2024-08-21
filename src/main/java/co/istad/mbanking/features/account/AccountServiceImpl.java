@@ -4,6 +4,7 @@ import co.istad.mbanking.domain.Account;
 import co.istad.mbanking.domain.AccountType;
 import co.istad.mbanking.domain.User;
 import co.istad.mbanking.domain.UserAccount;
+import co.istad.mbanking.features.account.dto.AccountDetailResponse;
 import co.istad.mbanking.features.account.dto.CreateAccountRequest;
 import co.istad.mbanking.features.user.UserRepository;
 import co.istad.mbanking.mapper.AccountMapper;
@@ -24,6 +25,21 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final AccountTypeRepository accountTypeRepository;
     private final AccountMapper accountMapper;
+
+
+    @Override
+    public AccountDetailResponse findByActNo(String actNo) {
+
+        Account account = accountRepository
+                .findByActNo(actNo)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Account doesn't exist"
+                ));
+
+        return accountMapper.toAccountDetailResponse(account);
+    }
+
 
     @Override
     public void createNew(CreateAccountRequest createAccountRequest) {

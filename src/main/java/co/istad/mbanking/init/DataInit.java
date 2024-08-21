@@ -2,8 +2,10 @@ package co.istad.mbanking.init;
 
 import co.istad.mbanking.domain.AccountType;
 import co.istad.mbanking.domain.CardType;
+import co.istad.mbanking.domain.Role;
 import co.istad.mbanking.domain.User;
 import co.istad.mbanking.features.account.AccountTypeRepository;
+import co.istad.mbanking.features.auth.RoleRepository;
 import co.istad.mbanking.features.card.CardTypeRepository;
 import co.istad.mbanking.features.user.UserRepository;
 import jakarta.annotation.PostConstruct;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,12 +25,25 @@ public class DataInit {
     private final UserRepository userRepository;
     private final CardTypeRepository cardTypeRepository;
     private final AccountTypeRepository accountTypeRepository;
+    private final RoleRepository roleRepository;
 
     @PostConstruct
     void init() {
         initCardTypeData();
         initAccountTypeData();
+        initRoleData();
         initUserData();
+    }
+
+    private void initRoleData() {
+        // ADMIN, MANAGER, STAFF, CUSTOMER, USER
+        List<Role> roles = new ArrayList<>();
+        roles.add(Role.builder().name("USER").build());
+        roles.add(Role.builder().name("CUSTOMER").build());
+        roles.add(Role.builder().name("STAFF").build());
+        roles.add(Role.builder().name("MANAGER").build());
+        roles.add(Role.builder().name("ADMIN").build());
+        roleRepository.saveAll(roles);
     }
 
     private void initUserData() {
@@ -49,6 +65,11 @@ public class DataInit {
         user.setIsAccountNonExpired(true);
         user.setIsAccountNonLocked(true);
         user.setIsCredentialsNonExpired(true);
+
+        List<Role> roles = new ArrayList<>();
+        roles.add(roleRepository.findById(1).orElseThrow());
+        roles.add(roleRepository.findById(5).orElseThrow());
+        user.setRoles(roles);
 
         userRepository.save(user);
     }
