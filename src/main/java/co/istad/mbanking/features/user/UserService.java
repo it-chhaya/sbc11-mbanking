@@ -1,9 +1,9 @@
 package co.istad.mbanking.features.user;
 
-import co.istad.mbanking.features.user.dto.RegisterRequest;
+import co.istad.mbanking.features.user.dto.CreateUserRequest;
 
 public interface UserService {
 
-    void register(RegisterRequest registerRequest);
+    void register(CreateUserRequest createUserRequest);
 
 }

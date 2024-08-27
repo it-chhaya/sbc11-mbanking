@@ -11,6 +11,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     // SELECT * FROM users WHERE phone_number = ?
     Optional<User> findByPhoneNumber(String phoneNumber);
 
+    Optional<User> findByEmail(String email);
+
     // Derived Query Method
     Boolean existsByNationalCardId(String nationalCardId);
 

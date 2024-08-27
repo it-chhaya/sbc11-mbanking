@@ -10,6 +10,7 @@ import co.istad.mbanking.features.card.CardTypeRepository;
 import co.istad.mbanking.features.user.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -26,6 +27,7 @@ public class DataInit {
     private final CardTypeRepository cardTypeRepository;
     private final AccountTypeRepository accountTypeRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
     void init() {
@@ -51,7 +53,7 @@ public class DataInit {
         user.setUuid(UUID.randomUUID().toString());
         user.setEmail("admin@mbanking.com");
         user.setPhoneNumber("098459947");
-        user.setPassword("pwd");
+        user.setPassword(passwordEncoder.encode("qwer"));
         user.setPin("1234");
         user.setProfileImage("profile-admin.jpg");
         user.setNationalCardId("123456789");
@@ -68,6 +70,7 @@ public class DataInit {
 
         List<Role> roles = new ArrayList<>();
         roles.add(roleRepository.findById(1).orElseThrow());
+        roles.add(roleRepository.findById(4).orElseThrow());
         roles.add(roleRepository.findById(5).orElseThrow());
         user.setRoles(roles);
 
