@@ -3,30 +3,47 @@ package co.istad.mbanking.features.auth;
 import co.istad.mbanking.domain.EmailVerification;
 import co.istad.mbanking.domain.Role;
 import co.istad.mbanking.domain.User;
-import co.istad.mbanking.features.auth.dto.RegisterRequest;
-import co.istad.mbanking.features.auth.dto.VerifyRequest;
+import co.istad.mbanking.features.auth.dto.*;
 import co.istad.mbanking.features.user.UserRepository;
 import co.istad.mbanking.mapper.UserMapper;
+import co.istad.mbanking.security.CustomUserDetails;
 import co.istad.mbanking.util.RandomUtil;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -39,6 +56,120 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${spring.mail.username}")
     private String adminMail;
+
+    private final String TOKEN_TYPE = "Bearer";
+
+    private final DaoAuthenticationProvider daoAuthenticationProvider;
+    private final JwtAuthenticationProvider jwtAuthenticationProvider;
+    private final JwtEncoder jwtEncoder;
+
+    private JwtEncoder jwtEncoderRefreshToken;
+
+    @Autowired
+    @Qualifier("jwtEncoderRefreshToken")
+    public void setJwtEncoderRefreshToken(JwtEncoder jwtEncoderRefreshToken) {
+        this.jwtEncoderRefreshToken = jwtEncoderRefreshToken;
+    }
+
+    @Override
+    public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
+
+        log.info("Hello");
+
+        Authentication auth = new BearerTokenAuthenticationToken(refreshTokenRequest.token());
+
+        auth = jwtAuthenticationProvider.authenticate(auth);
+
+        log.info("Authorities: {}", auth.getAuthorities());
+
+        Instant now = Instant.now();
+
+        // Create access token claims set
+        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
+                .id(auth.getName())
+                .issuedAt(now)
+                .issuer("web")
+                .audience(List.of("nextjs", "reactjs"))
+                .subject("Access Token")
+                .expiresAt(now.plus(1, ChronoUnit.MINUTES))
+                //.claim("scope", scope)
+                .build();
+
+        JwtEncoderParameters jwtEncoderParameters = JwtEncoderParameters.from(jwtClaimsSet);
+        Jwt jwt = jwtEncoder.encode(jwtEncoderParameters);
+
+        String accessToken = jwt.getTokenValue();
+        String refreshToken = refreshTokenRequest.token();
+
+        return JwtResponse.builder()
+                .tokenType(TOKEN_TYPE)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+
+    @Override
+    public JwtResponse login(LoginRequest loginRequest) {
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                loginRequest.email(),
+                loginRequest.password()
+        );
+
+        auth = daoAuthenticationProvider.authenticate(auth);
+
+        /*CustomUserDetails customUserDetails = (CustomUserDetails) auth.getPrincipal();
+        log.info(customUserDetails.getUser().getName());*/
+
+
+        // Prepare SCOPE
+        log.info("Authorities: {}", auth.getAuthorities());
+        // ADMIN MANAGER USER
+        String scope = auth.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
+        log.info("SCOPE: {}", scope);
+
+        Instant now = Instant.now();
+
+        // Create access token claims set
+        JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
+                .id(auth.getName())
+                .issuedAt(now)
+                .issuer("web")
+                .audience(List.of("nextjs", "reactjs"))
+                .subject("Access Token")
+                .expiresAt(now.plus(1, ChronoUnit.MINUTES))
+                .claim("scope", scope)
+                .build();
+
+        // Create refresh token claims set
+        JwtClaimsSet jwtClaimsSetRefreshToken = JwtClaimsSet.builder()
+                .id(auth.getName())
+                .issuedAt(now)
+                .issuer("web")
+                .audience(List.of("nextjs", "reactjs"))
+                .subject("Refresh Token")
+                .expiresAt(now.plus(7, ChronoUnit.DAYS))
+                .build();
+
+        JwtEncoderParameters jwtEncoderParameters = JwtEncoderParameters.from(jwtClaimsSet);
+        Jwt jwt = jwtEncoder.encode(jwtEncoderParameters);
+
+        JwtEncoderParameters jwtEncoderParametersRefreshToken = JwtEncoderParameters.from(jwtClaimsSetRefreshToken);
+        Jwt jwtRefreshToken = jwtEncoderRefreshToken.encode(jwtEncoderParametersRefreshToken);
+
+        String accessToken = jwt.getTokenValue();
+        String refreshToken = jwtRefreshToken.getTokenValue();
+
+        return JwtResponse.builder()
+                .tokenType(TOKEN_TYPE)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
 
 
     @Override

@@ -1,7 +1,6 @@
 package co.istad.mbanking.features.auth;
 
-import co.istad.mbanking.features.auth.dto.RegisterRequest;
-import co.istad.mbanking.features.auth.dto.VerifyRequest;
+import co.istad.mbanking.features.auth.dto.*;
 import co.istad.mbanking.features.user.dto.CreateUserRequest;
 import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
@@ -15,6 +14,18 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+
+
+    @PostMapping("/refresh")
+    JwtResponse refreshToken(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest) {
+        return authService.refreshToken(refreshTokenRequest);
+    }
+
+
+    @PostMapping("/login")
+    JwtResponse login(@RequestBody @Valid LoginRequest loginRequest) {
+        return authService.login(loginRequest);
+    }
 
 
     @PostMapping("/verify")
