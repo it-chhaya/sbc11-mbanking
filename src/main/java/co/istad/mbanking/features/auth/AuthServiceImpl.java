@@ -32,6 +32,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -61,8 +62,8 @@ public class AuthServiceImpl implements AuthService {
 
     private final DaoAuthenticationProvider daoAuthenticationProvider;
     private final JwtAuthenticationProvider jwtAuthenticationProvider;
-    private final JwtEncoder jwtEncoder;
 
+    private final JwtEncoder jwtEncoder;
     private JwtEncoder jwtEncoderRefreshToken;
 
     @Autowired
@@ -74,32 +75,53 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
 
-        log.info("Hello");
-
         Authentication auth = new BearerTokenAuthenticationToken(refreshTokenRequest.token());
 
         auth = jwtAuthenticationProvider.authenticate(auth);
 
-        log.info("Authorities: {}", auth.getAuthorities());
+        String scope = auth.getAuthorities()
+                .stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(" "));
+
+        log.info("New Scope: {}", scope);
+        log.info("Auth: {}", auth);
 
         Instant now = Instant.now();
 
+        Jwt jwt = (Jwt) auth.getPrincipal();
+
         // Create access token claims set
         JwtClaimsSet jwtClaimsSet = JwtClaimsSet.builder()
-                .id(auth.getName())
+                .id(jwt.getId())
                 .issuedAt(now)
                 .issuer("web")
                 .audience(List.of("nextjs", "reactjs"))
                 .subject("Access Token")
                 .expiresAt(now.plus(1, ChronoUnit.MINUTES))
-                //.claim("scope", scope)
+                .claim("scope", scope)
                 .build();
 
         JwtEncoderParameters jwtEncoderParameters = JwtEncoderParameters.from(jwtClaimsSet);
-        Jwt jwt = jwtEncoder.encode(jwtEncoderParameters);
+        Jwt encodedJwt = jwtEncoder.encode(jwtEncoderParameters);
 
-        String accessToken = jwt.getTokenValue();
+        String accessToken = encodedJwt.getTokenValue();
         String refreshToken = refreshTokenRequest.token();
+
+        if (Duration.between(Instant.now(), jwt.getExpiresAt()).toDays() < 2) {
+            // Create refresh token claims set
+            JwtClaimsSet jwtClaimsSetRefreshToken = JwtClaimsSet.builder()
+                    .id(auth.getName())
+                    .issuedAt(now)
+                    .issuer("web")
+                    .audience(List.of("nextjs", "reactjs"))
+                    .subject("Refresh Token")
+                    .expiresAt(now.plus(7, ChronoUnit.DAYS))
+                    .build();
+            JwtEncoderParameters jwtEncoderParametersRefreshToken = JwtEncoderParameters.from(jwtClaimsSetRefreshToken);
+            Jwt jwtRefreshToken = jwtEncoderRefreshToken.encode(jwtEncoderParametersRefreshToken);
+            refreshToken = jwtRefreshToken.getTokenValue();
+        }
 
         return JwtResponse.builder()
                 .tokenType(TOKEN_TYPE)

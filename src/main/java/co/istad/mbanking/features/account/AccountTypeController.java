@@ -16,7 +16,7 @@ public class AccountTypeController {
 
     private final AccountTypeService accountTypeService;
 
-    @PreAuthorize("hasAuthority('SCOPE_ROLE_USER')")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     @GetMapping
     List<AccountTypeResponse> findAll() {
         return accountTypeService.findAll();
