@@ -1,4 +1,17 @@
 services:
+  mobile-banking-api:
+    image: "mobile-banking-api"
+    build: .
+    container_name: mobile-banking-api
+    ports:
+      - 16800:8080
+    volumes:
+      - C:/Users/iLJiMae/OneDrive/Pictures/file-server/:/file-server/
+    networks:
+      - mobile-banking-net
+    depends_on:
+      - mobile-banking-db
+
   mobile-banking-db:
     image: postgres:16.3-bullseye
     container_name: mobile-banking-db
@@ -10,6 +23,12 @@ services:
       POSTGRES_DB: mobile_banking_db
     volumes:
       - mobile-banking-vol:/var/lib/postgresql/data
+    networks:
+      - mobile-banking-net
 
 volumes:
   mobile-banking-vol:
+
+networks:
+  mobile-banking-net:
+    driver: bridge
